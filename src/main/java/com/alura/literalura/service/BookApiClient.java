@@ -47,11 +47,8 @@ public class BookApiClient {
         BookApiClient client = new BookApiClient();
         List<Book> books = client.fetchBooks(apiUrl);
 
-        // Imprimir los libros obtenidos
-        books.forEach(book -> {
-            System.out.println("Título: " + book.getTitle());
-            book.getAuthors().forEach(author -> System.out.println("Autor: " + author.getName()));
-        });
+        // Imprimir los libros obtenidos con toString()
+        books.forEach(System.out::println);
     }
 
 }

@@ -1,16 +1,16 @@
 package com.alura.literalura.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIgnoreProperties(ignoreUnknown = true) // Ignora los campos desconocidos del JSON
 public class Book {
     private int id;
     private String title;
 
-    @JsonProperty("authors")
+    @JsonAlias("authors") // Permite mapear un alias si hay otro nombre para esta propiedad
     private List<Author> authors;
 
     // Getters y Setters
@@ -38,16 +38,35 @@ public class Book {
         this.authors = authors;
     }
 
+    // Método toString para mostrar la información del libro
+    @Override
+    public String toString() {
+        return "Book{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", authors=" + authors +
+                '}';
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Author {
         private String name;
 
+        // Getters y Setters
         public String getName() {
             return name;
         }
 
         public void setName(String name) {
             this.name = name;
+        }
+
+        // Método toString para mostrar la información del autor
+        @Override
+        public String toString() {
+            return "Author{" +
+                    "name='" + name + '\'' +
+                    '}';
         }
     }
 }
