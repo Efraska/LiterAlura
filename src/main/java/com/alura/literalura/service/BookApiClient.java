@@ -1,51 +1,57 @@
 package com.alura.literalura.service;
 
+import com.alura.literalura.model.Book;
+import com.alura.literalura.model.BookApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.io.IOException;
+import java.util.List;
 
 public class BookApiClient {
-
     private final HttpClient httpClient;
+    private final ObjectMapper objectMapper;
 
-    // Constructor para inicializar HttpClient
     public BookApiClient() {
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
+        this.objectMapper = new ObjectMapper();
     }
 
-    // Método para realizar solicitudes GET
-    public String fetchBooks(String apiUrl) {
+    public List<Book> fetchBooks(String apiUrl) {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .GET()
                 .build();
 
-        System.out.println("Enviando solicitud a: " + apiUrl);
-
         try {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Código de estado HTTP: " + response.statusCode());
-            System.out.println("Cuerpo de la respuesta: " + response.body());
-            return response.body();
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Error fetching books from API: " + e.getMessage(), e);
+            if (response.statusCode() == 200) {
+                // Deserializar JSON en BookApiResponse
+                BookApiResponse apiResponse = objectMapper.readValue(response.body(), BookApiResponse.class);
+                return apiResponse.getResults(); // Retornar la lista de libros
+            } else {
+                throw new RuntimeException("Error en la solicitud: Código de estado " + response.statusCode());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error analizando la respuesta JSON: " + e.getMessage(), e);
         }
     }
 
-    // Método main para pruebas
+
     public static void main(String[] args) {
-        // URL de prueba
         String apiUrl = "https://gutendex.com/books/?page=2";
-
-        // Instancia del cliente y ejecución de la solicitud
         BookApiClient client = new BookApiClient();
-        String response = client.fetchBooks(apiUrl);
+        List<Book> books = client.fetchBooks(apiUrl);
 
-        // Imprimir respuesta en consola
-        System.out.println(response);
+        // Imprimir los libros obtenidos
+        books.forEach(book -> {
+            System.out.println("Título: " + book.getTitle());
+            book.getAuthors().forEach(author -> System.out.println("Autor: " + author.getName()));
+        });
     }
+
 }
