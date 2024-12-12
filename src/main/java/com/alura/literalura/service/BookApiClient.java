@@ -9,18 +9,21 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 public class BookApiClient implements CommandLineRunner {
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final List<Book> searchedBooks;
 
     public BookApiClient() {
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
         this.objectMapper = new ObjectMapper();
+        this.searchedBooks = new ArrayList<>();
     }
 
     public List<Book> fetchBooks(String apiUrl) {
@@ -42,6 +45,38 @@ public class BookApiClient implements CommandLineRunner {
         }
     }
 
+    public void buscarLibroPorTitulo(String titulo) {
+        String apiUrl = "https://gutendex.com/books/?search=" + titulo;
+        List<Book> books = fetchBooks(apiUrl);
+
+        if (!books.isEmpty()) {
+            Book book = books.get(0); // Tomar el primer libro encontrado
+            searchedBooks.add(book);
+            System.out.println("Libro encontrado:");
+            System.out.println("Título: " + book.getTitle());
+            System.out.println("Autor(es): " + book.getAuthors().stream().map(Book.Author::getName).toList());
+            System.out.println("Idiomas: " + book.getLanguages());
+            System.out.println("Número de descargas: " + book.getDownloadCount());
+        } else {
+            System.out.println("No se encontró ningún libro con el título: " + titulo);
+        }
+    }
+
+    public void listarLibros() {
+        if (searchedBooks.isEmpty()) {
+            System.out.println("No hay libros registrados.");
+        } else {
+            System.out.println("Listado de libros registrados:");
+            searchedBooks.forEach(book -> {
+                System.out.println("Título: " + book.getTitle());
+                System.out.println("Autor(es): " + book.getAuthors().stream().map(Book.Author::getName).toList());
+                System.out.println("Idiomas: " + book.getLanguages());
+                System.out.println("Número de descargas: " + book.getDownloadCount());
+                System.out.println("-------------------------");
+            });
+        }
+    }
+
     @Override
     public void run(String... args) {
         mostrarMenu();
@@ -53,8 +88,8 @@ public class BookApiClient implements CommandLineRunner {
 
         while (continuar) {
             System.out.println("\n--- Menú de opciones ---");
-            System.out.println("1. Consultar libros");
-            System.out.println("2. Consultar por autor");
+            System.out.println("1. Buscar libro por título");
+            System.out.println("2. Listar libros registrados");
             System.out.println("3. Salir");
             System.out.print("Seleccione una opción: ");
 
@@ -62,40 +97,20 @@ public class BookApiClient implements CommandLineRunner {
             scanner.nextLine(); // Consumir la línea restante
 
             switch (opcion) {
-                case 1:
-                    consultarLibros();
-                    break;
-                case 2:
-                    System.out.print("Ingrese el nombre del autor: ");
-                    String autor = scanner.nextLine();
-                    consultarPorAutor(autor);
-                    break;
-                case 3:
+                case 1 -> {
+                    System.out.print("Ingrese el título del libro: ");
+                    String titulo = scanner.nextLine();
+                    buscarLibroPorTitulo(titulo);
+                }
+                case 2 -> listarLibros();
+                case 3 -> {
                     continuar = false;
                     System.out.println("Saliendo del programa...");
-                    break;
-                default:
-                    System.out.println("Opción inválida. Intente nuevamente.");
+                }
+                default -> System.out.println("Opción inválida. Intente nuevamente.");
             }
         }
         scanner.close();
-    }
-
-    public void consultarLibros() {
-        String apiUrl = "https://gutendex.com/books/?page=2";
-        List<Book> books = fetchBooks(apiUrl);
-        books.forEach(System.out::println);
-    }
-
-    public void consultarPorAutor(String autor) {
-        String apiUrl = "https://gutendex.com/books/?search=" + autor;
-        List<Book> books = fetchBooks(apiUrl);
-
-        if (books.isEmpty()) {
-            System.out.println("No se encontraron libros para el autor: " + autor);
-        } else {
-            books.forEach(System.out::println);
-        }
     }
 
     public static void main(String[] args) {
