@@ -88,30 +88,115 @@ public class BookApiClient implements CommandLineRunner {
 
         while (continuar) {
             System.out.println("\n--- Menú de opciones ---");
-            System.out.println("1. Buscar libro por título");
-            System.out.println("2. Listar libros registrados");
-            System.out.println("3. Salir");
+            System.out.println("1. Consultar libros");
+            System.out.println("2. Consultar por autor");
+            System.out.println("3. Lista de autores");
+            System.out.println("4. Listar autores vivos en un año");
+            System.out.println("5. Salir");
             System.out.print("Seleccione una opción: ");
 
             int opcion = scanner.nextInt();
             scanner.nextLine(); // Consumir la línea restante
 
             switch (opcion) {
-                case 1 -> {
-                    System.out.print("Ingrese el título del libro: ");
-                    String titulo = scanner.nextLine();
-                    buscarLibroPorTitulo(titulo);
-                }
-                case 2 -> listarLibros();
-                case 3 -> {
+                case 1:
+                    consultarLibros();
+                    break;
+                case 2:
+                    System.out.print("Ingrese el nombre del autor: ");
+                    String autor = scanner.nextLine();
+                    consultarPorAutor(autor);
+                    break;
+                case 3:
+                    List<Book> librosParaAutores = fetchBooks("https://gutendex.com/books/?page=2");
+                    listarAutores(librosParaAutores);
+                    break;
+                case 4:
+                    System.out.print("Ingrese el año para filtrar autores vivos: ");
+                    int year = scanner.nextInt();
+                    List<Book> librosParaVivos = fetchBooks("https://gutendex.com/books/?page=2");
+                    listarAutoresVivos(librosParaVivos, year);
+                    break;
+                case 5:
                     continuar = false;
                     System.out.println("Saliendo del programa...");
-                }
-                default -> System.out.println("Opción inválida. Intente nuevamente.");
+                    break;
+                default:
+                    System.out.println("Opción inválida. Intente nuevamente.");
             }
         }
         scanner.close();
     }
+    public void consultarLibros() {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Ingrese el título del libro que desea buscar: ");
+        String titulo = scanner.nextLine();
+
+        String apiUrl = "https://gutendex.com/books/?search=" + titulo;
+
+        try {
+            List<Book> books = fetchBooks(apiUrl);
+
+            if (books.isEmpty()) {
+                System.out.println("No se encontraron libros con el título: " + titulo);
+            } else {
+                System.out.println("\n--- Resultado de la búsqueda ---");
+                books.forEach(book -> {
+                    System.out.println("Título: " + book.getTitle());
+                    System.out.println("Autor: " + book.getAuthors().get(0).getName());
+                    System.out.println("Idiomas: " + book.getLanguages());
+                    System.out.println("Descargas: " + book.getDownloadCount());
+                    System.out.println("------------------------------");
+                });
+            }
+        } catch (Exception e) {
+            System.out.println("Error al consultar libros: " + e.getMessage());
+        }
+    }
+    public void consultarPorAutor(String autor) {
+        String apiUrl = "https://gutendex.com/books/?search=" + autor;
+
+        try {
+            List<Book> books = fetchBooks(apiUrl);
+
+            if (books.isEmpty()) {
+                System.out.println("No se encontraron libros para el autor: " + autor);
+            } else {
+                System.out.println("\n--- Libros encontrados para el autor " + autor + " ---");
+                books.forEach(book -> {
+                    System.out.println("Título: " + book.getTitle());
+                    System.out.println("Autor: " + book.getAuthors().get(0).getName());
+                    System.out.println("Idiomas: " + book.getLanguages());
+                    System.out.println("Descargas: " + book.getDownloadCount());
+                    System.out.println("------------------------------");
+                });
+            }
+        } catch (Exception e) {
+            System.out.println("Error al consultar por autor: " + e.getMessage());
+        }
+    }
+
+
+    public void listarAutores(List<Book> books) {
+        System.out.println("\n--- Lista de Autores ---");
+        books.stream()
+                .map(Book::getAuthors)
+                .filter(authors -> authors != null && !authors.isEmpty())
+                .map(authors -> authors.get(0)) // Tomar el primer autor
+                .forEach(author -> System.out.println(author.getName()));
+    }
+
+    public void listarAutoresVivos(List<Book> books, int year) {
+        System.out.println("\n--- Autores vivos en el año " + year + " ---");
+        books.stream()
+                .map(Book::getAuthors)
+                .filter(authors -> authors != null && !authors.isEmpty())
+                .map(authors -> authors.get(0)) // Tomar el primer autor
+                .filter(author -> author.getBirthYear() != null && author.getBirthYear() <= year &&
+                        (author.getDeathYear() == null || author.getDeathYear() > year)) // Filtrar autores vivos
+                .forEach(author -> System.out.println(author.getName() + " (n. " + author.getBirthYear() + ")"));
+    }
+
 
     public static void main(String[] args) {
         new BookApiClient().run();
