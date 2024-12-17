@@ -1,29 +1,37 @@
 package com.alura.literalura.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
 import java.util.List;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
+@Entity
 public class Book {
-    private int id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
     private String title;
 
-    @JsonProperty("authors")
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE}, fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "book_author",
+            joinColumns = @JoinColumn(name = "book_id"),
+            inverseJoinColumns = @JoinColumn(name = "author_id")
+    )
     private List<Author> authors;
 
-    @JsonProperty("languages")
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> languages;
 
-    @JsonProperty("download_count")
+    @Column(name = "download_count")
     private int downloadCount;
 
     // Getters y Setters
-    public int getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -57,59 +65,5 @@ public class Book {
 
     public void setDownloadCount(int downloadCount) {
         this.downloadCount = downloadCount;
-    }
-
-    @Override
-    public String toString() {
-        String authorNames = authors.stream()
-                .map(Author::getName)
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("Desconocido");
-
-        return "Título: " + title + "\n" +
-                "Autor: " + authorNames + "\n" +
-                "Idioma: " + (languages.isEmpty() ? "Desconocido" : languages.get(0)) + "\n" +
-                "Descargas: " + downloadCount;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Author {
-        private String name;
-
-        @JsonProperty("birth_year")
-        private Integer birthYear;
-
-        @JsonProperty("death_year")
-        private Integer deathYear;
-
-        // Getters y Setters
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public Integer getBirthYear() {
-            return birthYear;
-        }
-
-        public void setBirthYear(Integer birthYear) {
-            this.birthYear = birthYear;
-        }
-
-        public Integer getDeathYear() {
-            return deathYear;
-        }
-
-        public void setDeathYear(Integer deathYear) {
-            this.deathYear = deathYear;
-        }
-
-        @Override
-        public String toString() {
-            return "Autor: " + name + ", Año de nacimiento: " + birthYear + ", Año de fallecimiento: " + (deathYear != null ? deathYear : "Vivo");
-        }
     }
 }
